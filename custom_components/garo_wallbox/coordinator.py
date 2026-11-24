@@ -185,6 +185,8 @@ class GaroMeterCoordinator(DataUpdateCoordinator[int]):
         self._config = config
         self._api_client = api_client
         self._external_meter: GaroMeter | None = None
+        self._internal_meter: GaroMeter | None = None
+        self._internal_meter_supported = True
         self._central100_meter: GaroMeter | None = None
         self._central101_meter: GaroMeter | None = None
         self._lb_config: GaroLBConfig | None = None
@@ -202,6 +204,15 @@ class GaroMeterCoordinator(DataUpdateCoordinator[int]):
             raise ValueError("External meter not initialized")
         return self._external_meter
     
+    @property
+    def has_internal_meter(self) -> bool:
+        return self._internal_meter is not None
+    @property
+    def internal_meter(self)->GaroMeter:
+        if not self._internal_meter:
+            raise ValueError("Internal meter not initialized")
+        return self._internal_meter
+
     @property
     def has_central100_meter(self) -> bool:
         return self._central100_meter is not None
@@ -277,12 +288,35 @@ class GaroMeterCoordinator(DataUpdateCoordinator[int]):
         await self._api_client.async_set_lb_fuse101(fuse)
         await self.async_request_refresh()
 
+    async def _async_fetch_internal_meter(self) -> bool:
+        """Fetch the charger's built-in meter, if it has one.
+
+        Chargers without a built-in meter (or with firmware that does not expose it)
+        are detected on the first fetch and not polled again.
+        """
+        try:
+            meter = await self._api_client.async_get_internal_meter(self._internal_meter)
+        except Exception as e:
+            if self._internal_meter is None:
+                _LOGGER.debug("Internal meter not available, disabling: %s", e)
+                self._internal_meter_supported = False
+                return False
+            raise
+        if self._internal_meter is None and not meter.serial_number:
+            _LOGGER.debug("Internal meter reported no serial number, disabling")
+            self._internal_meter_supported = False
+            return False
+        self._internal_meter = meter
+        return meter.has_changed
+
     async def _fetch_device_data(self)->int:
         try:
             has_changed = False
             if not self._stored_data:
                 self._stored_data = await self._store.async_load() or {}
                 _LOGGER.debug("Loaded stored data: %s", self._stored_data)
+            if self._internal_meter_supported:
+                has_changed = await self._async_fetch_internal_meter() or has_changed
             if self._config.local_load_balanced:
                 self._external_meter = await self._api_client.async_get_external_meter(self._external_meter)
                 if self._external_meter.has_changed:

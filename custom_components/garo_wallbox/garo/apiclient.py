@@ -64,6 +64,9 @@ class ApiClient:
     async def async_get_external_meter(self, meter: GaroMeter | None = None) -> GaroMeter:        
         return await self._async_get_meter('meterinfo/EXTERNAL', meter)
     
+    async def async_get_internal_meter(self, meter: GaroMeter | None = None) -> GaroMeter:
+        return await self._async_get_meter('meterinfo/INTERNAL', meter)
+
     async def async_get_central100_meter(self, meter: GaroMeter | None = None) -> GaroMeter:
         return await self._async_get_meter('meterinfo/CENTRAL100', meter)
     

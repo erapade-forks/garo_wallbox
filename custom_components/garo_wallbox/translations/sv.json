@@ -213,6 +213,24 @@
       },
       "right_acc_energy": {
         "name": "Höger total energi"
+      },
+      "internal_meter_l1_current": {
+        "name": "Ström fas L1"
+      },
+      "internal_meter_l1_power": {
+        "name": "Effekt fas L1"
+      },
+      "internal_meter_l2_current": {
+        "name": "Ström fas L2"
+      },
+      "internal_meter_l2_power": {
+        "name": "Effekt fas L2"
+      },
+      "internal_meter_l3_current": {
+        "name": "Ström fas L3"
+      },
+      "internal_meter_l3_power": {
+        "name": "Effekt fas L3"
       }
     },
     "select": {

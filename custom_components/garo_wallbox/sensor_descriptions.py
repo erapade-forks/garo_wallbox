@@ -352,6 +352,78 @@ def build_legacy_sensor_description(name: str) -> GaroSensorEntityDescription:
     )
 
 
+def build_internal_meter_sensor_descriptions(meter_coordinator, is_3_phase: bool = True) -> list[GaroMeterSensorEntityDescription]:
+    """Sensors for the charger's built-in meter.
+
+    Only the per phase readings are exposed; the charger already has total energy sensors.
+    The raw power values of the built-in meter use a different scale than the external
+    meters, so power is always calculated from current and the configured voltage.
+    """
+    def power(current: float) -> float:
+        return round(current * meter_coordinator.voltage, -1) / 1000
+
+    return [
+        GaroMeterSensorEntityDescription(
+            key="internal_meter_l1_current",
+            translation_key="internal_meter_l1_current",
+            name="Current phase L1",
+            device_class=SensorDeviceClass.CURRENT,
+            state_class=SensorStateClass.MEASUREMENT,
+            native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+            get_state=lambda meter: meter.l1_current,
+        ),
+        GaroMeterSensorEntityDescription(
+            key="internal_meter_l2_current",
+            translation_key="internal_meter_l2_current",
+            name="Current phase L2",
+            device_class=SensorDeviceClass.CURRENT,
+            state_class=SensorStateClass.MEASUREMENT,
+            native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+            get_state=lambda meter: meter.l2_current,
+            entity_registry_enabled_default=is_3_phase,
+        ),
+        GaroMeterSensorEntityDescription(
+            key="internal_meter_l3_current",
+            translation_key="internal_meter_l3_current",
+            name="Current phase L3",
+            device_class=SensorDeviceClass.CURRENT,
+            state_class=SensorStateClass.MEASUREMENT,
+            native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+            get_state=lambda meter: meter.l3_current,
+            entity_registry_enabled_default=is_3_phase,
+        ),
+        GaroMeterSensorEntityDescription(
+            key="internal_meter_l1_power",
+            translation_key="internal_meter_l1_power",
+            name="Power phase L1",
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+            native_unit_of_measurement=UnitOfPower.KILO_WATT,
+            get_state=lambda meter: power(meter.l1_current),
+        ),
+        GaroMeterSensorEntityDescription(
+            key="internal_meter_l2_power",
+            translation_key="internal_meter_l2_power",
+            name="Power phase L2",
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+            native_unit_of_measurement=UnitOfPower.KILO_WATT,
+            get_state=lambda meter: power(meter.l2_current),
+            entity_registry_enabled_default=is_3_phase,
+        ),
+        GaroMeterSensorEntityDescription(
+            key="internal_meter_l3_power",
+            translation_key="internal_meter_l3_power",
+            name="Power phase L3",
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+            native_unit_of_measurement=UnitOfPower.KILO_WATT,
+            get_state=lambda meter: power(meter.l3_current),
+            entity_registry_enabled_default=is_3_phase,
+        ),
+    ]
+
+
 def build_meter_sensor_descriptions(meter_coordinator, is_3_phase: bool = True) -> list[GaroMeterSensorEntityDescription]:
     """Meter sensor descriptions; power readings depend on the specific meter_coordinator's voltage/calculate_power."""
     return [

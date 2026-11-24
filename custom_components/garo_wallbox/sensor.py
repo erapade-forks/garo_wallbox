@@ -22,6 +22,7 @@ from .sensor_descriptions import (
     SCHEDULE_SENSOR_DESCRIPTION,
     build_legacy_sensor_description,
     build_meter_sensor_descriptions,
+    build_internal_meter_sensor_descriptions,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -110,6 +111,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: GaroConfigEntry, async_a
                 for description in build_meter_sensor_descriptions(meter_coordinator, is_3_phase)
             )
 
+        if meter_coordinator.has_internal_meter:
+            internal_meter = meter_coordinator.internal_meter
+            entities.extend(
+                GaroInternalMeterSensorEntity(meter_coordinator, entry, description, internal_meter, coordinator)
+                for description in build_internal_meter_sensor_descriptions(meter_coordinator, internal_meter.type not in [103, 104])
+            )
         if meter_coordinator.has_external_meter:
             add_meter_entities(meter_coordinator.external_meter, meter_coordinator.external_meter.type not in [103, 104])
         if meter_coordinator.has_central100_meter:
@@ -164,6 +171,14 @@ class GaroMeterSensorEntity(GaroMeterEntity, SensorEntity):
     def _async_update_attrs(self) -> None:
         """Update the attributes of the sensor."""
         self._attr_native_value = self.entity_description.get_state(self._meter)
+
+
+class GaroInternalMeterSensorEntity(GaroMeterSensorEntity):
+    """Sensor for the charger's built-in meter, shown on the charger device."""
+
+    def __init__(self, coordinator: GaroMeterCoordinator, entry, description: GaroMeterSensorEntityDescription, meter: GaroMeter, device_coordinator: GaroDeviceCoordinator):
+        super().__init__(coordinator, entry, description, meter)
+        self._attr_device_info = device_coordinator.device_info
 
 
 class GaroLegacySensorEntity(GaroSensorEntity):

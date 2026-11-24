@@ -67,10 +67,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: GaroConfigEntry):
         except Exception:
             _LOGGER.exception("Failed to fetch schema")
             pass
-        meter_coordinator: GaroMeterCoordinator | None = None
-        if configuration.has_load_balancer:
-            meter_coordinator = GaroMeterCoordinator(hass, entry, api_client, configuration)
-            await meter_coordinator.async_config_entry_first_refresh()
+        # The meter coordinator also polls the charger's built-in meter, so it is
+        # created for every charger, not only for load balanced ones.
+        meter_coordinator = GaroMeterCoordinator(hass, entry, api_client, configuration)
+        await meter_coordinator.async_config_entry_first_refresh()
         entry.runtime_data = GaroRuntimeData(
             coordinator=coordinator,
             meter_coordinator=meter_coordinator 
